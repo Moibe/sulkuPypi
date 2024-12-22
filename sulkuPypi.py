@@ -1,93 +1,144 @@
+import bridges
+import globales
 import requests
-import time
+from cryptography.fernet import Fernet
 
 base_url = "https://moibe-sulku-fastapi-docker.hf.space/"
-userfile = "gAAAAABmEZA4SLBC2YczouOrjIEi9WNCNGOIvyUcqBUnzxNsftXTdy54KaX9x8mAjFkABSI6FJrdZDQKk_5lpJOgJoMChxlniw=="
-#Ojo, cuando el userfile termina con símbolo igual y supongo que también si empieza, causa problemas, la solución, ...
-#... implementar más adelante desde ser agregar un caractér delimitador y despúes quitarlo, esto para evitar problemas...
-#... con el símbolo =, ? y &. Dicho problema solo sucede cuando lo recibe como query params no como path params.
-work = "picswap"
+work = globales.work
 
+def encripta(username):
+    key = bridges.key
+    fernet = Fernet(key)
+    string_original = username
+    string_encriptado = fernet.encrypt(string_original.encode("utf-8"))
+    return string_encriptado
 
-def getTokens(userfile):
-
-    method = "getTokens/"
-
-    api_url = base_url + method + userfile
-
+def getData(aplicacion):
+    method = "getData/"
+    params = aplicacion
+    api_url = base_url + method + params
     response = requests.get(api_url)
 
     if response.status_code == 200:
-        print("Conexión a Sulku successful...")
-        tokens = response.json()
-        print("Tokens:", tokens)
+        data = response.json()
     else:
-        print("Error al obtener el elemento todo:", response.status_code)
+        error = f"Error al obtener el elemento todo: {response.status_code}"
+        return error    
+    return data
 
+def getNovelty(userfile, aplicacion):
+    method = "getUserNovelty/"
+    params = userfile + "/" + aplicacion
+    api_url = base_url + method + params
+    response = requests.get(api_url)
+
+    if response.status_code == 200:
+        novelty = response.json()
+        return novelty              
+    else:
+        error = f"Error al obtener el elemento todo: {response.status_code}"
+        return error    
+
+def getTokens(userfile, env):
+    method = "getTokens/"
+    params = userfile + "/" + env    
+    api_url = base_url + method + params
+    response = requests.get(api_url)
+
+    if response.status_code == 200:
+        tokens = response.json()
+    else:
+        error = f"Error al obtener el elemento todo: {response.status_code}"
+        return error
     return tokens
 
 def authorize(tokens, work):
-
     method = "authorize/"
-
-    api_url = base_url + method + str(tokens) + "/" + work
-
-    print("Apiurl es: ", api_url)
-    
+    params = str(tokens) + "/" + work
+    api_url = base_url + method + params
     response = requests.get(api_url)
 
     if response.status_code == 200:
-        print("Conexión a Sulku successful...")
         autorizacion = response.json()
-        print("Autorización:", autorizacion)
     else:
-        print("Error al obtener el elemento todo:", response.status_code)
-
+        error = f"Error al obtener el elemento todo: {response.status_code}"
+        return error
     return autorizacion
 
-def debitTokens(userfile, work):
-
+def debitTokens(userfile, work, env):
     method = "debitTokens/"
-
-    api_url = base_url + method + userfile + "/" + work
-
-    print("Apiurl es: ", api_url)
-    
+    params = userfile + "/" + work + "/" + env
+    api_url = base_url + method + params
     response = requests.get(api_url)
 
     if response.status_code == 200:
-        print("Conexión a Sulku successful...")
         tokens = response.json()
-        print("Tokens:", tokens)
     else:
-        print("Error al obtener el elemento todo:", response.status_code)
-
+        error = f"Error al obtener el elemento todo: {response.status_code}"
+        return error
     return tokens
 
-def debitTokensQ(userfile, work):
+def getQuota():
 
-    #debitTokens pero con QueryParams, (los query params sirve para ocasiones en los que usas dos de un mismo query param para abtener el resultado de un AND o rangos como...
+    method = "getQuota/"
+    api_url = base_url + method 
+    response = requests.get(api_url)
+
+    if response.status_code == 200:
+        quota = response.json()
+    else:
+        error = f"Error al obtener el elemento todo: {response.status_code}"
+        return error
+
+    return quota
+
+def getQuotaQ():
+
+    #debitTokens pero con QueryParams, (los query params sirve para ocasiones en los que usas dos de un mismo query param para obtener el resultado de un AND o rangos como...
     #... clima por ejemplo.)
-    method = "debitTokens?"
+    method = "getQuota?"
 
-    api_url = base_url + method + "userfile=" + userfile + "&" + "work=" +  work
-
-    print("Apiurl es: ", api_url)
-    
+    api_url = base_url + method
     response = requests.get(api_url)
 
     if response.status_code == 200:
-        print("Conexión a Sulku successful...")
-        tokens = response.json()
-        print("Tokens:", tokens)
+        quota = response.json()
     else:
-        print("Error al obtener el elemento todo:", response.status_code)
+        error = f"Error al obtener el elemento todo: {response.status_code}"
+        return error
 
-    return tokens
+    return quota
 
-if __name__ == "__main__":
-    getTokens(userfile)
-    authorize(18,'picswap')
-    debitTokens(userfile, work)
-    #debitTokensQ(userfile, work)
-    #pass
+def updateQuota(costo_proceso):
+    method = "updateQuota/"
+    params = str(costo_proceso)
+    api_url = base_url + method + params
+    response = requests.get(api_url)
+
+    if response.status_code == 200:
+        quota = response.json()
+        print("Quota Updated:", quota)
+    else:
+        error = f"Error al obtener el elemento todo: {response.status_code}"
+        return error
+
+    return quota
+
+def updateQuotaQ(costo_proceso):
+
+    #debitTokens pero con QueryParams, (los query params sirve para ocasiones en los que usas dos de un mismo query param para obtener el resultado de un AND o rangos como...
+    #... clima por ejemplo.)
+    method = "updateQuota?"
+    #Y como puedes ver el armado de sus params es dintinto ya que usa ampersand &
+    params = "costo_proceso=" + costo_proceso
+
+    api_url = base_url + method + params
+    response = requests.get(api_url)
+
+    if response.status_code == 200:
+        quota = response.json()
+    else:
+        error = f"Error al obtener el elemento todo: {response.status_code}"
+        return error
+
+    return quota
